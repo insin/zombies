@@ -75,7 +75,7 @@ var WIDTH = 512
 var canvas, context
 var player, zombies, sounds
 
-function init() {
+function init(debug) {
   canvas = document.createElement('canvas')
   canvas.width = WIDTH
   canvas.height = HEIGHT
@@ -85,6 +85,7 @@ function init() {
   document.body.appendChild(canvas)
 
   player = new Player({x: 10, y: 10, d: 0})
+
   zombies = [
     new Zombie({x: 100, y: 100, d: 225})
   , new Zombie({x: 150, y: 150, d: 225})
@@ -92,7 +93,34 @@ function init() {
   , new Zombie({x: 250, y: 250, d: 225})
   , new Zombie({x: 300, y: 300, d: 225})
   ]
+
   sounds = []
+
+  if (debug) {
+    var gui = new dat.GUI()
+    playerGUI(gui.addFolder('Player'), player)
+    zombieGUI(gui.addFolder('Zombie 1'), zombies[0])
+  }
+}
+
+function playerGUI(gui, p) {
+  // gui.add(p, 'x').listen()
+  // gui.add(p, 'y').listen()
+  gui.add(p, 'd').listen()
+  gui.add(p, 'size').min(5).max(50).step(1).listen()
+  gui.add(p, 'speed').min(0.5).max(10).step(0.5).listen()
+  gui.open()
+}
+
+function zombieGUI(gui, z) {
+  // gui.add(z, 'x').listen()
+  // gui.add(z, 'y').listen()
+  gui.add(z, 'd').listen()
+  gui.add(z, 'size').min(5).max(50).step(1).listen()
+  gui.add(z, 'speed').min(0.5).max(10).step(0.5).listen()
+  gui.add(z, 'los').min(10).max(200).step(5).listen()
+  gui.add(z, 'fov').min(1).max(90).step(1).listen()
+  gui.open()
 }
 
 var paused = false
@@ -244,5 +272,5 @@ function draw() {
   context.stroke()
 }
 
-init()
+init(true)
 gameLoop()
