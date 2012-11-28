@@ -175,10 +175,23 @@ function draw() {
 
   // Draw zombies
   // Line of sight cones
-  context.fillStyle = 'lightgray'
   context.strokeStyle = 'silver'
   for (var i = 0, l = zombies.length; i < l; i++) {
     var zombie = zombies[i]
+    // Is the player within the zombie's cone?
+    var dx = player.x - zombie.x
+      , dy = player.y - zombie.y
+      , dist = Math.sqrt(dx * dx + dy * dy)
+      , angle = Math.atan2(dy, dx) * 180 / Math.PI
+    if (zombie.d - zombie.fov <= angle &&
+        zombie.d + zombie.fov >= angle &&
+        dist <= zombie.los) {
+      context.fillStyle = 'pink'
+    }
+    else {
+      context.fillStyle = 'lightgray'
+    }
+    // Draw cone
     context.beginPath()
     context.moveTo(zombie.x, zombie.y)
     var coneX1 = zombie.x + Math.cos((zombie.d - zombie.fov) * (Math.PI / 180)) * zombie.los
