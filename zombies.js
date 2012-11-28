@@ -27,6 +27,7 @@ var asMovable = function() {
       , hyp = Math.sqrt(dx * dx + dy * dy)
     this.x += this.speed * dx / hyp
     this.y += this.speed * dy / hyp
+    // TODO Rotate towards the target instead of snapping-to
     this.d = Math.atan2(dy, dx) * 180 / Math.PI
   }
 
@@ -262,7 +263,7 @@ function update() {
                            Math.sin(radians(zombie.d)))
       , toTarget = new Vec2(player.x - zombie.x, player.y - zombie.y)
       , deltaAngle = Vec2.dot(coneVec, toTarget.clone().normalise())
-    zombie.canSeePlayer = (deltaAngle >= Math.cos(radians(zombie.fov / 2)) &&
+    zombie.canSeePlayer = (deltaAngle >= Math.cos(radians(zombie.fov)) &&
                            toTarget.magnitude() <= zombie.los)
     // XXX Moan every so often
     zombie.moanFrame--
