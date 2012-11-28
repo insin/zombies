@@ -54,6 +54,7 @@ function Zombie(kwargs) {
   this.speed = kwargs.speed || Math.max(0.5, Math.random() * 1.5)
   this.los = kwargs.los || 50 + Math.floor(Math.random() * 50)
   this.fov = kwargs.fov || 25 + Math.floor(Math.random() * 15)
+  this.canSeePlayer = false
   // XXX
   this.moanFrame = Math.floor(Math.random() * 5000)
 }
@@ -142,7 +143,16 @@ function update() {
   // Move zombies
   for (var i = 0, l = zombies.length; i < l; i++) {
     var zombie = zombies[i]
+    // Always move towards the player so we can test stuff
     zombie.moveTowards(player.x, player.y)
+    // Can it see the player?
+    var dx = player.x - zombie.x
+      , dy = player.y - zombie.y
+      , dist = Math.sqrt(dx * dx + dy * dy)
+      , angle = Math.atan2(dy, dx) * 180 / Math.PI
+    zombie.canSeePlayer = (zombie.d - zombie.fov <= angle &&
+                           zombie.d + zombie.fov >= angle &&
+                           dist <= zombie.los)
     // XXX Moan every so often
     zombie.moanFrame--
     if (zombie.moanFrame == 0) {
@@ -179,27 +189,16 @@ function draw() {
   for (var i = 0, l = zombies.length; i < l; i++) {
     var zombie = zombies[i]
     // Is the player within the zombie's cone?
-    var dx = player.x - zombie.x
-      , dy = player.y - zombie.y
-      , dist = Math.sqrt(dx * dx + dy * dy)
-      , angle = Math.atan2(dy, dx) * 180 / Math.PI
-    if (zombie.d - zombie.fov <= angle &&
-        zombie.d + zombie.fov >= angle &&
-        dist <= zombie.los) {
-      context.fillStyle = 'pink'
-    }
-    else {
-      context.fillStyle = 'lightgray'
-    }
+    context.fillStyle = zombie.canSeePlayer ? 'pink' : 'lightgray'
     // Draw cone
     context.beginPath()
     context.moveTo(zombie.x, zombie.y)
     var coneX1 = zombie.x + Math.cos((zombie.d - zombie.fov) * (Math.PI / 180)) * zombie.los
       , coneY1 = zombie.y + Math.sin((zombie.d - zombie.fov) * (Math.PI / 180)) * zombie.los
-      , coneX2 = zombie.x + Math.cos((zombie.d + zombie.fov) * (Math.PI / 180)) * zombie.los
-      , coneY2 = zombie.y + Math.sin((zombie.d + zombie.fov) * (Math.PI / 180)) * zombie.los
+      // , coneX2 = zombie.x + Math.cos((zombie.d + zombie.fov) * (Math.PI / 180)) * zombie.los
+      // , coneY2 = zombie.y + Math.sin((zombie.d + zombie.fov) * (Math.PI / 180)) * zombie.los
     context.lineTo(coneX1, coneY1)
-    context.arc(zombie.x, zombie.y, zombie.los,(zombie.d - zombie.fov) * (Math.PI / 180), (zombie.d + zombie.fov) * (Math.PI / 180), false)
+    context.arc(zombie.x, zombie.y, zombie.los, (zombie.d - zombie.fov) * (Math.PI / 180), (zombie.d + zombie.fov) * (Math.PI / 180), false)
     context.lineTo(zombie.x, zombie.y)
     context.fill()
     context.stroke()
