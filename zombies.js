@@ -42,7 +42,10 @@ function Player(kwargs) {
   this.y = kwargs.y
   this.d = kwargs.d || 0
   this.size = 10
-  this.speed = 2
+  this.speed = this.walkSpeed = 2
+  this.runSpeed = 3
+  this.moving = false
+  this.running = false
   // XXX
   this.stepFrame = 0
   this.shootFrame = Math.floor(Math.random() * 5000)
@@ -76,7 +79,7 @@ function Sound(kwargs) {
 var WIDTH = 512
   , HEIGHT = 372
 
-var canvas, context
+var canvas, context, keys = {}
 var player, zombies, sounds
 
 function init(debug) {
@@ -100,6 +103,20 @@ function init(debug) {
 
   sounds = []
 
+  for (var keyCode in KEY_NAMES) {
+    if (KEY_NAMES.hasOwnProperty(keyCode)) {
+      keys[KEY_NAMES[keyCode]] = false
+    }
+  }
+
+  window.onkeydown = function(e) {
+    keys[KEY_NAMES[e.keyCode]] = true
+  }
+
+  window.onkeyup = function(e) {
+    keys[KEY_NAMES[e.keyCode]] = false
+  }
+
   if (debug) {
     var gui = new dat.GUI()
     playerGUI(gui.addFolder('Player'), player)
@@ -107,12 +124,27 @@ function init(debug) {
   }
 }
 
+var KEY_NAMES = {
+  32: 'run'   // Spacebar
+, 37: 'left'  // Arrow keys
+, 38: 'up'
+, 39: 'right'
+, 40: 'down'
+, 65: 'left'  // WASD
+, 87: 'up'
+, 68: 'right'
+, 83: 'down'
+}
+
 function playerGUI(gui, p) {
   // gui.add(p, 'x').listen()
   // gui.add(p, 'y').listen()
+  // gui.add(p, 'speed').listen()
+  // gui.add(p, 'running').listen()
   gui.add(p, 'd').listen()
   gui.add(p, 'size').min(5).max(50).step(1).listen()
-  gui.add(p, 'speed').min(0.5).max(10).step(0.5).listen()
+  gui.add(p, 'walkSpeed').min(0.5).max(10).step(0.5).listen()
+  gui.add(p, 'runSpeed').min(0.5).max(10).step(0.5).listen()
   gui.open()
 }
 
@@ -145,31 +177,79 @@ function gameLoop() {
 }
 
 function update() {
-  // Move player
-  player.moveForward()
-  // XXX Make walking noises
-  player.stepFrame = (player.stepFrame + 1) % 35
-  if (player.stepFrame == 0) {
-    sounds.push(new Sound({x: player.x, y: player.y, radius: 20, text: 'step'}))
+  // Move player and set direction
+  player.moving = keys.up || keys.down || keys.left || keys.right
+  player.running = keys.run
+  player.speed = keys.run ? player.runSpeed : player.walkSpeed
+  if (keys.up) {
+    player.y -= player.speed
+    if (keys.left) {
+      player.x -= player.speed
+      player.d = 225
+    }
+    else if (keys.right) {
+      player.x += player.speed
+      player.d = 315
+    }
+    else {
+      player.d = 270
+    }
   }
+  else if (keys.down) {
+    player.y += player.speed
+    if (keys.left) {
+      player.x -= player.speed
+      player.d = 135
+    }
+    else if (keys.right) {
+      player.x += player.speed
+      player.d = 45
+    }
+    else {
+      player.d = 90
+    }
+  }
+  else if (keys.left) {
+    player.x -= player.speed
+    player.d = 180
+  }
+  else if (keys.right) {
+    player.x += player.speed
+    player.d = 0
+  }
+
+  // Make walking noises
+  if (player.moving) {
+    player.stepFrame += (player.running ? 2 : 1)
+    if (player.stepFrame >= (player.running ? 50 : 30)) {
+      sounds.push(new Sound({
+        x: player.x
+      , y: player.y
+      , radius: player.running ? 60 : 20
+      , text: player.running ? 'clomp' : 'step'
+      }))
+      player.stepFrame = player.stepFrame % (player.running ? 50 : 30)
+    }
+  }
+
   // XXX Take a shot every so often
   player.shootFrame--
   if (player.shootFrame == 0) {
     sounds.push(new Sound({x: player.x, y: player.y, radius: 800, text: 'BLAM!'}))
     player.shootFrame = Math.floor(Math.random() * 5000)
   }
-  // Turn player around if they're about to exit the canvas
-  if (player.x <= 0) {
-    player.d = -70 + Math.round(160 * Math.random())
+  // Prevent player from exiting the canvas
+  if (player.x < 0) {
+    player.x = 0
   }
-  else if (player.x >= WIDTH) {
-    player.d = 110 + Math.round(160 * Math.random())
+  else if (player.x > WIDTH) {
+    player.x = WIDTH
   }
-  if (player.y <= 0) {
-    player.d = 20 + Math.round(160 * Math.random())
+  if (player.y < 0) {
+    player.y = 0
   }
-  else if (player.y >= HEIGHT) {
-    player.d = 200 + Math.round(160 * Math.random())
+  else if (player.y > HEIGHT) {
+    player.y = HEIGHT
   }
 
   // Move zombies
