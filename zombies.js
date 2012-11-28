@@ -10,6 +10,10 @@ window.requestAnimFrame = function() {
          }
 }()
 
+function radians(deg) {
+  return deg * Math.PI / 180
+}
+
 // Mixin for movable entities which have: x, y, d(egrees), speed
 var asMovable = function() {
   function moveForward() {
@@ -174,13 +178,12 @@ function update() {
     // Always move towards the player so we can test stuff
     zombie.moveTowards(player.x, player.y)
     // Can it see the player?
-    var dx = player.x - zombie.x
-      , dy = player.y - zombie.y
-      , dist = Math.sqrt(dx * dx + dy * dy)
-      , angle = Math.atan2(dy, dx) * 180 / Math.PI
-    zombie.canSeePlayer = (zombie.d - zombie.fov <= angle &&
-                           zombie.d + zombie.fov >= angle &&
-                           dist <= zombie.los)
+    var coneVec = new Vec2(Math.cos(radians(zombie.d)),
+                           Math.sin(radians(zombie.d)))
+      , toTarget = new Vec2(player.x - zombie.x, player.y - zombie.y)
+      , deltaAngle = Vec2.dot(coneVec, toTarget.clone().normalise())
+    zombie.canSeePlayer = (deltaAngle >= Math.cos(radians(zombie.fov / 2)) &&
+                           toTarget.magnitude() <= zombie.los)
     // XXX Moan every so often
     zombie.moanFrame--
     if (zombie.moanFrame == 0) {
